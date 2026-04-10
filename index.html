@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>アルバムアプリ</title>
 
-<!-- ⭐ ファビコン（重要） -->
+<!-- ファビコン -->
 <link rel="icon" type="image/png" href="images/icon.png">
 
 <style>
@@ -18,10 +18,11 @@ body {
 
 h1 {
   font-size: 20px;
+  margin-bottom: 10px;
 }
 
 #fileInput {
-  margin: 10px 0;
+  margin-bottom: 10px;
 }
 
 #preview {
@@ -30,18 +31,34 @@ h1 {
   gap: 10px;
 }
 
+/* 画像カード */
 .box {
-  width: 100%;
+  position: relative;
   aspect-ratio: 1/1;
-  background: #ddd;
   border-radius: 10px;
   overflow: hidden;
+  background: #ddd;
 }
 
+/* 画像 */
 .box img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+}
+
+/* 削除ボタン */
+.delete {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  cursor: pointer;
 }
 </style>
 </head>
@@ -57,20 +74,24 @@ h1 {
 <script>
 let images = [];
 
-// 起動時ロード
+/* 起動時ロード */
 window.addEventListener("DOMContentLoaded", () => {
   const saved = localStorage.getItem("album");
   if (saved) {
-    images = JSON.parse(saved);
-    render();
+    try {
+      images = JSON.parse(saved);
+    } catch (e) {
+      images = [];
+    }
   }
+  render();
 });
 
-// 画像追加
+/* 画像追加 */
 document.getElementById("fileInput").addEventListener("change", (e) => {
-  const files = e.target.files;
+  const files = Array.from(e.target.files);
 
-  for (let i = 0; i < files.length; i++) {
+  files.forEach(file => {
     const reader = new FileReader();
 
     reader.onload = (event) => {
@@ -79,28 +100,44 @@ document.getElementById("fileInput").addEventListener("change", (e) => {
       render();
     };
 
-    reader.readAsDataURL(files[i]);
-  }
+    reader.readAsDataURL(file);
+  });
+
+  // 同じ画像を再選択可能にする
+  e.target.value = "";
 });
 
-// 保存
+/* 保存 */
 function save() {
   localStorage.setItem("album", JSON.stringify(images));
 }
 
-// 表示
+/* 表示 */
 function render() {
   const preview = document.getElementById("preview");
   preview.innerHTML = "";
 
-  images.forEach(src => {
+  images.forEach((src, index) => {
     const box = document.createElement("div");
     box.className = "box";
 
     const img = document.createElement("img");
     img.src = src;
 
+    const del = document.createElement("div");
+    del.className = "delete";
+    del.textContent = "×";
+
+    // 削除処理
+    del.onclick = (e) => {
+      e.stopPropagation();
+      images.splice(index, 1);
+      save();
+      render();
+    };
+
     box.appendChild(img);
+    box.appendChild(del);
     preview.appendChild(box);
   });
 }
