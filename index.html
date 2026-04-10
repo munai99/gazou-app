@@ -74,7 +74,7 @@ h1 {
 <script>
 let images = [];
 
-/* 起動時ロード */
+/* 起動時読み込み */
 window.addEventListener("DOMContentLoaded", () => {
   const saved = localStorage.getItem("album");
   if (saved) {
@@ -87,23 +87,28 @@ window.addEventListener("DOMContentLoaded", () => {
   render();
 });
 
-/* 画像追加 */
+/* 画像追加（完全安定版） */
 document.getElementById("fileInput").addEventListener("change", (e) => {
   const files = Array.from(e.target.files);
 
-  files.forEach(file => {
-    const reader = new FileReader();
+  const readers = files.map(file => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
 
-    reader.onload = (event) => {
-      images.push(event.target.result);
-      save();
-      render();
-    };
+      reader.onload = () => {
+        resolve(reader.result);
+      };
 
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    });
   });
 
-  // 同じ画像を再選択可能にする
+  Promise.all(readers).then(results => {
+    images = images.concat(results);
+    save();
+    render();
+  });
+
   e.target.value = "";
 });
 
@@ -128,7 +133,6 @@ function render() {
     del.className = "delete";
     del.textContent = "×";
 
-    // 削除処理
     del.onclick = (e) => {
       e.stopPropagation();
       images.splice(index, 1);
