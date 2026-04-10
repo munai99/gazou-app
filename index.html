@@ -1,151 +1,147 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>画像登録・表示アプリ</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      margin: 0;
-      padding: 10px;
-      background: #f0f0f0;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 10px;
-    }
-    .upload-area {
-      margin: 10px 0;
-      padding: 10px;
-      border: 1px dashed #aaa;
-      border-radius: 4px;
-      background: #fff;
-    }
-    .gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-      gap: 5px;
-      margin: 10px 0;
-    }
-    .thumbnail-item {
-      position: relative;
-      border: 1px solid #aaa;
-      border-radius: 4px;
-      overflow: hidden;
-      background: #fff;
-    }
-    .thumbnail-item img {
-      width: 100%;
-      height: 100px;
-      object-fit: cover;
-      display: block;
-    }
-    .delete-btn {
-      position: absolute;
-      top: 2px;
-      right: 2px;
-      background: rgba(0, 0, 0, 0.7);
-      border: none;
-      color: #fff;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 12px;
-      cursor: pointer;
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      justify-content: center;
-      align-items: center;
-      z-index: 100;
-    }
-    .modal img {
-      max-width: 90%;
-      max-height: 80vh;
-      border-radius: 4px;
-    }
-    .modal-close {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 16px;
-      cursor: pointer;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>お気に入り画像ランチャー</title>
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="> <!-- 埋め込みで解決 -->
+<style>
+body { margin: 0; font-family: sans-serif; background: #111; color: white; }
+header { padding: 12px; text-align: center; background: #222; }
+#inputArea { padding: 10px; }
+input { width: 100%; padding: 10px; background: #333; color: white; border: none; box-sizing: border-box; }
+#grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 6px; }
+.item { position: relative; }
+.item img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 6px; cursor: pointer; display: block; }
+.del { position: absolute; top: 4px; right: 4px; background: red; color: white; border: none; font-size: 12px; border-radius: 3px; padding: 2px 6px; }
+#viewer { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; z-index: 9999; }
+#viewer img { max-width: 100%; max-height: 100%; object-fit: contain; }
+#error { color: orange; padding: 10px; text-align: center; }
+</style>
 </head>
 <body>
 
-  <div class="container">
+<header>お気に入り画像ランチャー</header>
 
-    <h1>よく見る画像アプリ</h1>
+<div id="inputArea">
+  <input type="file" id="file" accept="image/*" multiple>
+</div>
 
-    <!-- 画像登録エリア -->
-    <div class="upload-area">
-      <h2>画像を登録</h2>
-      <input type="file" id="file-upload" accept="image/*" multiple />
-      <button id="add-btn">追加</button>
-    </div>
+<div id="error" style="display:none;"></div>
+<div id="grid"></div>
 
-    <!-- 画像一覧（サムネイル） -->
-    <h2>登録画像一覧</h2>
-    <div class="gallery" id="image-gallery"></div>
+<div id="viewer" onclick="closeViewer()">
+  <img id="viewerImg">
+</div>
 
-  </div>
+<script>
+let favs = [];
+const STORAGE_KEY = 'favs_v2';
+let useLocalStorage = true;
 
-  <!-- 元画像表示用モーダル -->
-  <div class="modal" id="modal">
-    <button class="modal-close" id="modal-close">×</button>
-    <img id="modal-img" src="" alt="拡大画像" />
-  </div>
+// エラーログ表示
+function showError(msg) {
+  document.getElementById('error').textContent = msg;
+  document.getElementById('error').style.display = 'block';
+  console.error(msg);
+}
 
-  <script>
-    // 画像データを保存
-    const loadImages = () => {
-      const saved = localStorage.getItem('registeredImages');
-      return saved ? JSON.parse(saved) : [];
+// 圧縮読み込み
+async function readCompressed(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const maxSize = 800;
+        const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.75));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(favs.slice(0, 20))); // 20枚制限で安全
+  } catch(e) {
+    showError('容量オーバー: 画像を20枚以内に');
+  }
+}
+
+function load() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    favs = saved ? JSON.parse(saved) : [];
+  } catch(e) {
+    favs = [];
+  }
+}
+
+function render() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  document.getElementById('error').style.display = 'none';
+
+  favs.forEach((img, index) => {
+    const div = document.createElement('div');
+    div.className = 'item';
+
+    const image = document.createElement('img');
+    image.src = img;
+    image.onclick = () => openViewer(img);
+
+    const del = document.createElement('button');
+    del.className = 'del';
+    del.textContent = '×';
+    del.onclick = (e) => {
+      e.stopPropagation();
+      favs.splice(index, 1);
+      save();
+      render();
     };
 
-    const saveImages = (images) => {
-      localStorage.setItem('registeredImages', JSON.stringify(images));
-    };
+    div.append(image, del);
+    grid.appendChild(div);
+  });
+}
 
-    let images = loadImages();
+function openViewer(img) {
+  document.getElementById('viewerImg').src = img;
+  document.getElementById('viewer').style.display = 'flex';
+}
 
-    // 画像をサムネイル一覧に描画
-    const renderGallery = () => {
-      const gallery = document.getElementById('image-gallery');
-      gallery.innerHTML = '';
+function closeViewer() {
+  document.getElementById('viewer').style.display = 'none';
+}
 
-      images.forEach((dataUrl, index) => {
-        const item = document.createElement('div');
-        item.className = 'thumbnail-item';
+// 初期化
+load();
+render();
 
-        const img = document.createElement('img');
-        img.src = dataUrl;
-        img.alt = `画像${index + 1}`;
-        img.onclick = () => {
-          const modal = document.getElementById('modal');
-          const modalImg = document.getElementById('modal-img');
-          modalImg.src = dataUrl;
-          modal.style.display = 'flex';
-        };
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'delete-btn';
-        deleteBtn.textContent = '削除';
-        deleteBtn.onclick = 
+document.getElementById('file').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files);
+  for (const file of files) {
+    try {
+      const dataUrl = await readCompressed(file);
+      favs.push(dataUrl);
+    } catch(err) {
+      showError('画像読み込みエラー: ' + file.name);
+    }
+  }
+  save();
+  render();
+  e.target.value = '';
+});
+</script>
+</body>
+</html>
