@@ -1,16 +1,22 @@
-const CACHE_NAME = 'fav-image-launcher-v1';
-const ASSETS = ['./', './index.html', './manifest.json'];
+document.getElementById('file').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files || []);
+  if (!files.length) return;
 
-self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
-});
+  try {
+    setStatus(`読み込み中: 0/${files.length}`);
 
-self.addEventListener('activate', event => {
-  event.waitUntil(self.clients.claim());
-});
+    for (let i = 0; i < files.length; i++) {
+      try {
+        await addImage(files[i]);
+        setStatus(`読み込み中: ${i + 1}/${files.length}`);
+      } catch (err) {
+        showError('画像追加エラー: ' + files[i].name + ' / ' + (err?.message || err));
+      }
+    }
 
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request))
-  );
+    await render();
+  } finally {
+    e.target.value = '';
+    setStatus('');
+  }
 });
