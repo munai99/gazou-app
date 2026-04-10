@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="icon" type="image/png" href="images/icon.png?v=1">
-
 <title>アルバム</title>
 
 <style>
@@ -48,7 +46,7 @@ button {
   cursor: pointer;
 }
 
-/* 拡大表示 */
+/* viewer */
 .viewer {
   display: none;
   position: fixed;
@@ -94,7 +92,7 @@ const list = document.getElementById("list");
 const viewer = document.getElementById("viewer");
 const bigImg = document.getElementById("bigImg");
 
-/* ✅ 保存データ復元 */
+/* ✅ 読み込み */
 let images = JSON.parse(localStorage.getItem("album") || "[]");
 
 /* 保存 */
@@ -102,20 +100,32 @@ function save() {
   localStorage.setItem("album", JSON.stringify(images));
 }
 
-/* 画像追加（複数対応・完全版） */
+/* =========================
+   画像追加（完全安定版）
+========================= */
 file.addEventListener("change", (e) => {
   const files = Array.from(e.target.files);
+  let temp = [];
+  let loaded = 0;
 
-  files.forEach(f => {
+  if (files.length === 0) return;
+
+  files.forEach(fileItem => {
     const reader = new FileReader();
 
     reader.onload = (event) => {
-      images.push(event.target.result);
-      save();
-      render();
+      temp.push(event.target.result);
+      loaded++;
+
+      // 全部読み終わってから一括保存
+      if (loaded === files.length) {
+        images = images.concat(temp);
+        save();
+        render();
+      }
     };
 
-    reader.readAsDataURL(f);
+    reader.readAsDataURL(fileItem);
   });
 
   file.value = "";
@@ -126,35 +136,34 @@ function render() {
   list.innerHTML = "";
 
   images.forEach((img, i) => {
-    const image = document.createElement("img");
-    image.src = img;
-    image.className = "thumb";
+    const el = document.createElement("img");
+    el.src = img;
+    el.className = "thumb";
 
-    /* 拡大 */
-    image.onclick = () => open(img);
+    el.onclick = () => open(img);
 
-    /* 長押し削除（スマホ） */
+    /* 長押し削除 */
     let timer;
 
-    image.addEventListener("touchstart", () => {
+    el.addEventListener("touchstart", () => {
       timer = setTimeout(() => remove(i), 600);
     });
 
-    image.addEventListener("touchend", () => {
+    el.addEventListener("touchend", () => {
       clearTimeout(timer);
     });
 
     /* PC右クリック削除 */
-    image.addEventListener("contextmenu", (e) => {
+    el.addEventListener("contextmenu", (e) => {
       e.preventDefault();
       remove(i);
     });
 
-    list.appendChild(image);
+    list.appendChild(el);
   });
 }
 
-/* 拡大表示 */
+/* 拡大 */
 function open(img) {
   bigImg.src = img;
   viewer.style.display = "flex";
