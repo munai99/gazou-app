@@ -1,24 +1,17 @@
 {
-  "name": "お気に入り画像ランチャー",
-  "short_name": "画像ランチャー",
-  "description": "スマホ画像をサムネ登録・即拡大表示",
+  "name": "画像ランチャー",
+  "short_name": "画像L",
+  "description": "お気に入り画像即表示",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#111111",
   "theme_color": "#222222",
-  "categories": ["photo", "utilities"],
   "icons": [
     {
-      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiByeD0iMjQiIGZpbGw9IiMyMjIiLz4KPGNpcmNsZSBjeD0iOTYiIGN5PSI4MCIgcj0iNDUiIGZpbGw9IiNmZmYiLz4KPHRleHQgeD0iOTYiIHk9IjExNSIgZm9udC1zaXplPSI3MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzIyMiIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiPtCY77Ef44KT44KT44O744OR44KT44KT44KTPC90ZXh0Pgo8L3N2Zz4K",
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjE5MiIgaGVpZ2h0PSIxOTIiIHJ4PSIyNCIgZmlsbD0iIzIyMiIvPjxjaXJjbGUgY3g9Ijk2IiBjeT0iODAiIHI9IjQ1IiBmaWxsPSIjZmZmIi8+PHRleHQgeD0iOTYiIHk9IjExNSIgZm9udC1zaXplPSI3MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzIyMiIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiPuCYYyDsgqkg44KT44KT44O744OR44KT44KTPC90ZXh0Pjwvc3ZnPg==",
       "sizes": "192x192",
       "type": "image/svg+xml"
-    },
-    {
-      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiByeD0iNjQiIGZpbGw9IiMyMjIiLz4KPGNpcmNsZSBjeD0iMjU2IiBjeT0iMjEyIiByPSIxMjAiIGZpbGw9IiNmZmYiLz4KPHRleHQgeD0iMjU2IiB5PSIzMDUiIGZvbnQtc2l6ZT0iMTkwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMjIyIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiI+📷PC90ZXh0Pgo8L3N2Zz4K",
-      "sizes": "512x512", 
-      "type": "image/svg+xml"
     }
-  ],
-  "apple-mobile-web-app-capable": "yes",
-  "apple-mobile-web-app-status-bar-style": "black-translucent"
+  ]
 }
