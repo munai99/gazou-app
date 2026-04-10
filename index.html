@@ -42,8 +42,7 @@ button { touch-action: manipulation; }
 const DB_NAME = 'fav-image-launcher';
 const DB_VERSION = 1;
 const STORE = 'images';
-const MAX_SIZE = 800;
-let db;
+let db = null;
 
 function setStatus(msg) {
   document.getElementById('status').textContent = msg || '';
@@ -65,6 +64,7 @@ function hideError() {
 function openDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
+
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE)) {
@@ -72,85 +72,69 @@ function openDB() {
         store.createIndex('createdAt', 'createdAt', { unique: false });
       }
     };
+
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
 }
 
-function id() {
+function uid() {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function compressImage(file) {
+function readAsDataURL(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('FileReader error'));
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onerror = () => reject(new Error('Image load error'));
-      img.onload = () => {
-        try {
-          const ratio = Math.min(1, MAX_SIZE / img.width, MAX_SIZE / img.height);
-          const w = Math.max(1, Math.round(img.width * ratio));
-          const h = Math.max(1, Math.round(img.height * ratio));
-          const canvas = document.createElement('canvas');
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, w, h);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
-          resolve(dataUrl);
-        } catch (err) {
-          reject(err);
-        }
-      };
-      img.src = e.target.result;
-    };
+    reader.onload = () => resolve(reader.result);
     reader.readAsDataURL(file);
   });
 }
 
 async function addImage(file) {
-  const dataUrl = await compressImage(file);
-  const tx = db.transaction(STORE, 'readwrite');
-  const store = tx.objectStore(STORE);
-  await new Promise((resolve, reject) => {
+  const dataUrl = await readAsDataURL(file);
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const store = tx.objectStore(STORE);
+
     const req = store.add({
-      id: id(),
+      id: uid(),
       name: file.name,
       dataUrl,
       createdAt: Date.now()
     });
+
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });
 }
 
 async function getAllImages() {
-  const tx = db.transaction(STORE, 'readonly');
-  const store = tx.objectStore(STORE);
-  return await new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const store = tx.objectStore(STORE);
     const req = store.getAll();
+
     req.onsuccess = () => resolve(req.result || []);
     req.onerror = () => reject(req.error);
   });
 }
 
 async function deleteImage(imageId) {
-  const tx = db.transaction(STORE, 'readwrite');
-  const store = tx.objectStore(STORE);
-  return await new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const store = tx.objectStore(STORE);
     const req = store.delete(imageId);
+
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });
 }
 
 function openViewer(img) {
-  const v = document.getElementById('viewer');
-  const vi = document.getElementById('viewerImg');
-  vi.src = img;
-  v.style.display = 'flex';
+  document.getElementById('viewerImg').src = img;
+  document.getElementById('viewer').style.display = 'flex';
 }
 
 function closeViewer() {
@@ -162,8 +146,16 @@ async function render() {
   hideError();
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
+
   const items = await getAllImages();
   items.sort((a, b) => b.createdAt - a.createdAt);
+
+  if (!items.length) {
+    setStatus('まだ画像はありません');
+    return;
+  }
+
+  setStatus(`${items.length}枚あります`);
 
   for (const item of items) {
     const div = document.createElement('div');
@@ -181,7 +173,7 @@ async function render() {
       e.stopPropagation();
       try {
         await deleteImage(item.id);
-        render();
+        await render();
       } catch (err) {
         showError('削除エラー: ' + (err?.message || err));
       }
@@ -205,18 +197,18 @@ document.getElementById('file').addEventListener('change', async (e) => {
   const files = Array.from(e.target.files || []);
   if (!files.length) return;
 
-  setStatus(`読み込み中: 0/${files.length}`);
-  for (let i = 0; i < files.length; i++) {
-    try {
+  try {
+    setStatus(`読み込み中: 0/${files.length}`);
+    for (let i = 0; i < files.length; i++) {
       await addImage(files[i]);
       setStatus(`読み込み中: ${i + 1}/${files.length}`);
-    } catch (err) {
-      showError('画像追加エラー: ' + files[i].name + ' / ' + (err?.message || err));
     }
+    e.target.value = '';
+    await render();
+    setStatus('');
+  } catch (err) {
+    showError('画像追加エラー: ' + (err?.message || err));
   }
-  e.target.value = '';
-  setStatus('');
-  render();
 });
 
 window.addEventListener('load', () => {
