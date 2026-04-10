@@ -1,6 +1,6 @@
 {
-  "name": "お気に入り画像ランチャー",
-  "short_name": "画像ランチャー",
+  "name": "マイ画像",
+  "short_name": "マイ画像",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
