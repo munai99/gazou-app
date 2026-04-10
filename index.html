@@ -3,148 +3,163 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>アルバムアプリ</title>
+<title>お気に入り画像</title>
 
-<!-- ファビコン -->
-<link rel="icon" type="image/png" href="images/icon.png">
+<!-- ⭐ アイコン（同じフォルダに icon.png を置く） -->
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
 
 <style>
 body {
-  font-family: sans-serif;
   margin: 0;
-  padding: 12px;
-  background: #f5f5f5;
-}
-
-h1 {
-  font-size: 20px;
-  margin-bottom: 10px;
-}
-
-#fileInput {
-  margin-bottom: 10px;
-}
-
-#preview {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 10px;
-}
-
-/* 画像枠 */
-.box {
-  position: relative;
-  aspect-ratio: 1/1;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #ddd;
-}
-
-/* 画像 */
-.box img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* 削除ボタン */
-.delete {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  background: rgba(0,0,0,0.6);
+  font-family: sans-serif;
+  background: #111;
   color: white;
-  font-size: 12px;
-  padding: 3px 6px;
-  border-radius: 5px;
+}
+
+header {
+  padding: 12px;
+  text-align: center;
+  background: #222;
+  font-size: 16px;
+}
+
+#inputArea {
+  padding: 10px;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  background: #333;
+  color: white;
+}
+
+#grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 6px;
+}
+
+.item {
+  position: relative;
+}
+
+.item img {
+  width: 100%;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  border-radius: 6px;
   cursor: pointer;
+}
+
+.del {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: red;
+  color: white;
+  border: none;
+  font-size: 12px;
+  border-radius: 3px;
+}
+
+#viewer {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: black;
+  justify-content: center;
+  align-items: center;
+}
+
+#viewer img {
+  max-width: 100%;
+  max-height: 100%;
 }
 </style>
 </head>
 
 <body>
 
-<h1>アルバム</h1>
+<header>お気に入り画像ランチャー</header>
 
-<!-- 📸 カメラ対応 -->
-<input type="file" id="fileInput" accept="image/*" multiple capture="environment">
+<div id="inputArea">
+  <input type="file" id="file" accept="image/*">
+</div>
 
-<div id="preview"></div>
+<div id="grid"></div>
+
+<div id="viewer" onclick="closeViewer()">
+  <img id="viewerImg">
+</div>
 
 <script>
-let images = [];
+let favs = JSON.parse(localStorage.getItem("favs") || "[]");
 
-/* 起動時ロード */
-window.addEventListener("DOMContentLoaded", () => {
-  const saved = localStorage.getItem("album");
-  if (saved) {
-    try {
-      images = JSON.parse(saved);
-    } catch (e) {
-      images = [];
-    }
-  }
-  render();
-});
+render();
 
-/* 画像追加（安定版） */
-document.getElementById("fileInput").addEventListener("change", (e) => {
-  const files = Array.from(e.target.files);
+// 画像追加
+document.getElementById("file").addEventListener("change", function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
 
-  const readers = files.map(file => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
+  const reader = new FileReader();
 
-      reader.onload = () => {
-        resolve(reader.result);
-      };
-
-      reader.readAsDataURL(file);
-    });
-  });
-
-  Promise.all(readers).then(results => {
-    images = images.concat(results);
+  reader.onload = function(ev) {
+    favs.push(ev.target.result);
     save();
     render();
-  });
+  };
 
+  reader.readAsDataURL(file);
   e.target.value = "";
 });
 
-/* 保存 */
+// 保存
 function save() {
-  localStorage.setItem("album", JSON.stringify(images));
+  localStorage.setItem("favs", JSON.stringify(favs));
 }
 
-/* 表示 */
+// 表示
 function render() {
-  const preview = document.getElementById("preview");
-  preview.innerHTML = "";
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
 
-  images.forEach((src, index) => {
-    const box = document.createElement("div");
-    box.className = "box";
+  favs.forEach((img, index) => {
+    const div = document.createElement("div");
+    div.className = "item";
 
-    const img = document.createElement("img");
-    img.src = src;
+    const image = document.createElement("img");
+    image.src = img;
+    image.onclick = () => open(img);
 
-    const del = document.createElement("div");
-    del.className = "delete";
-    del.textContent = "×";
-
+    const del = document.createElement("button");
+    del.className = "del";
+    del.innerText = "×";
     del.onclick = (e) => {
       e.stopPropagation();
-      images.splice(index, 1);
+      favs.splice(index, 1);
       save();
       render();
     };
 
-    box.appendChild(img);
-    box.appendChild(del);
-    preview.appendChild(box);
+    div.appendChild(image);
+    div.appendChild(del);
+    grid.appendChild(div);
   });
+}
+
+// 拡大表示
+function open(img) {
+  document.getElementById("viewerImg").src = img;
+  document.getElementById("viewer").style.display = "flex";
+}
+
+// 閉じる
+function closeViewer() {
+  document.getElementById("viewer").style.display = "none";
 }
 </script>
 
