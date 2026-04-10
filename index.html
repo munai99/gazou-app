@@ -31,7 +31,7 @@ h1 {
   gap: 10px;
 }
 
-/* 画像カード */
+/* 画像枠 */
 .box {
   position: relative;
   aspect-ratio: 1/1;
@@ -67,14 +67,15 @@ h1 {
 
 <h1>アルバム</h1>
 
-<input type="file" id="fileInput" accept="image/*" multiple>
+<!-- 📸 カメラ対応 -->
+<input type="file" id="fileInput" accept="image/*" multiple capture="environment">
 
 <div id="preview"></div>
 
 <script>
 let images = [];
 
-/* 起動時読み込み */
+/* 起動時ロード */
 window.addEventListener("DOMContentLoaded", () => {
   const saved = localStorage.getItem("album");
   if (saved) {
@@ -87,7 +88,7 @@ window.addEventListener("DOMContentLoaded", () => {
   render();
 });
 
-/* 画像追加（完全安定版） */
+/* 画像追加（安定版） */
 document.getElementById("fileInput").addEventListener("change", (e) => {
   const files = Array.from(e.target.files);
 
