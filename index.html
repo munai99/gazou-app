@@ -42,6 +42,7 @@ button { touch-action: manipulation; }
 const DB_NAME = 'fav-image-launcher';
 const DB_VERSION = 1;
 const STORE = 'images';
+const CACHE_NAME = 'fav-image-launcher-cache-v2';
 let db = null;
 
 function setStatus(msg) {
@@ -64,7 +65,6 @@ function hideError() {
 function openDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
-
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE)) {
@@ -72,7 +72,6 @@ function openDB() {
         store.createIndex('createdAt', 'createdAt', { unique: false });
       }
     };
-
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
@@ -93,18 +92,15 @@ function readAsDataURL(file) {
 
 async function addImage(file) {
   const dataUrl = await readAsDataURL(file);
-
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite');
     const store = tx.objectStore(STORE);
-
     const req = store.add({
       id: uid(),
       name: file.name,
       dataUrl,
       createdAt: Date.now()
     });
-
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error || new Error('IndexedDB add failed'));
     tx.onerror = () => reject(tx.error || new Error('Transaction failed'));
@@ -116,7 +112,6 @@ async function getAllImages() {
     const tx = db.transaction(STORE, 'readonly');
     const store = tx.objectStore(STORE);
     const req = store.getAll();
-
     req.onsuccess = () => resolve(req.result || []);
     req.onerror = () => reject(req.error);
   });
@@ -127,7 +122,6 @@ async function deleteImage(imageId) {
     const tx = db.transaction(STORE, 'readwrite');
     const store = tx.objectStore(STORE);
     const req = store.delete(imageId);
-
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });
@@ -147,7 +141,6 @@ async function render() {
   hideError();
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
-
   const items = await getAllImages();
   items.sort((a, b) => b.createdAt - a.createdAt);
 
@@ -200,7 +193,6 @@ document.getElementById('file').addEventListener('change', async (e) => {
 
   try {
     setStatus(`読み込み中: 0/${files.length}`);
-
     for (let i = 0; i < files.length; i++) {
       try {
         await addImage(files[i]);
@@ -209,7 +201,6 @@ document.getElementById('file').addEventListener('change', async (e) => {
         showError('画像追加エラー: ' + files[i].name + ' / ' + (err?.message || err));
       }
     }
-
     await render();
   } finally {
     e.target.value = '';
