@@ -1,14 +1,9 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>お気に入り画像ランチャー</title>
-
-<!-- アイコン -->
-<link rel="icon" type="image/png" href="icon.png">
-<link rel="apple-touch-icon" href="icon.png">
-
 <style>
 body {
   margin: 0;
@@ -16,44 +11,39 @@ body {
   background: #111;
   color: white;
 }
-
 header {
   padding: 12px;
   text-align: center;
   background: #222;
 }
-
 #inputArea {
   padding: 10px;
 }
-
 input {
   width: 100%;
   padding: 10px;
   background: #333;
   color: white;
   border: none;
+  box-sizing: border-box;
 }
-
 #grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   padding: 6px;
 }
-
 .item {
   position: relative;
 }
-
 .item img {
   width: 100%;
   aspect-ratio: 1/1;
   object-fit: cover;
   border-radius: 6px;
   cursor: pointer;
+  display: block;
 }
-
 .del {
   position: absolute;
   top: 4px;
@@ -63,70 +53,72 @@ input {
   border: none;
   font-size: 12px;
   border-radius: 3px;
+  padding: 2px 6px;
 }
-
 #viewer {
   display: none;
   position: fixed;
   inset: 0;
-  background: black;
+  background: rgba(0,0,0,0.95);
   justify-content: center;
   align-items: center;
+  z-index: 9999;
 }
-
 #viewer img {
   max-width: 100%;
   max-height: 100%;
+  object-fit: contain;
 }
 </style>
 </head>
-
 <body>
 
 <header>お気に入り画像ランチャー</header>
 
 <div id="inputArea">
-  <!-- ⭐ 複数選択OK -->
   <input type="file" id="file" accept="image/*" multiple>
 </div>
 
 <div id="grid"></div>
 
 <div id="viewer" onclick="closeViewer()">
-  <img id="viewerImg">
+  <img id="viewerImg" alt="">
 </div>
 
 <script>
 let favs = JSON.parse(localStorage.getItem("favs") || "[]");
-
 render();
 
-// ⭐ 複数画像対応（ここが重要）
-document.getElementById("file").addEventListener("change", function(e) {
+document.getElementById("file").addEventListener("change", async function(e) {
   const files = Array.from(e.target.files);
 
-  files.forEach(file => {
-    const reader = new FileReader();
+  for (const file of files) {
+    const dataUrl = await readFileAsDataURL(file);
+    favs.push(dataUrl);
+  }
 
-    reader.onload = function(ev) {
-      favs.push(ev.target.result);
-      save();
-      render();
-    };
-
-    reader.readAsDataURL(file);
-  });
-
-  // 同じ画像を再選択できるようにリセット
+  save();
+  render();
   e.target.value = "";
 });
 
-// 保存
-function save() {
-  localStorage.setItem("favs", JSON.stringify(favs));
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }
 
-// 表示
+function save() {
+  try {
+    localStorage.setItem("favs", JSON.stringify(favs));
+  } catch (err) {
+    alert("保存容量を超えました。画像を減らすか、サイズの小さい画像を使ってください。");
+  }
+}
+
 function render() {
   const grid = document.getElementById("grid");
   grid.innerHTML = "";
@@ -137,13 +129,12 @@ function render() {
 
     const image = document.createElement("img");
     image.src = img;
-
-    image.onclick = () => open(img);
+    image.alt = "お気に入り画像";
+    image.onclick = () => openViewer(img);
 
     const del = document.createElement("button");
     del.className = "del";
     del.innerText = "×";
-
     del.onclick = (e) => {
       e.stopPropagation();
       favs.splice(index, 1);
@@ -157,13 +148,11 @@ function render() {
   });
 }
 
-// 拡大表示
-function open(img) {
+function openViewer(img) {
   document.getElementById("viewerImg").src = img;
   document.getElementById("viewer").style.display = "flex";
 }
 
-// 閉じる
 function closeViewer() {
   document.getElementById("viewer").style.display = "none";
 }
