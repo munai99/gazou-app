@@ -6,7 +6,7 @@
 
 <link rel="icon" type="image/png" href="images/icon.png?v=1">
 
-<title>私のアルバム</title>
+<title>アルバム</title>
 
 <style>
 body {
@@ -22,6 +22,16 @@ header {
   border-bottom: 1px solid #ddd;
 }
 
+button {
+  padding: 10px 14px;
+  margin: 5px;
+  border: none;
+  border-radius: 8px;
+  background: #333;
+  color: white;
+  font-weight: bold;
+}
+
 #list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
@@ -34,10 +44,11 @@ header {
   aspect-ratio: 1 / 1;
   object-fit: cover;
   border-radius: 10px;
-  cursor: pointer;
   border: 1px solid #ddd;
+  cursor: pointer;
 }
 
+/* 拡大表示 */
 .viewer {
   display: none;
   position: fixed;
@@ -52,23 +63,13 @@ header {
   max-width: 100%;
   max-height: 90%;
 }
-
-button {
-  padding: 10px 14px;
-  margin: 5px;
-  border: none;
-  border-radius: 8px;
-  background: #333;
-  color: white;
-  font-weight: bold;
-}
 </style>
 </head>
 
 <body>
 
 <header>
-  <h3>私のアルバム</h3>
+  <h3>アルバム</h3>
 
   <input type="file" id="file" multiple accept="image/*" style="display:none">
 
@@ -93,7 +94,7 @@ const list = document.getElementById("list");
 const viewer = document.getElementById("viewer");
 const bigImg = document.getElementById("bigImg");
 
-/* ✅ ローカル保存から復元 */
+/* ✅ 保存データ復元 */
 let images = JSON.parse(localStorage.getItem("album") || "[]");
 
 /* 保存 */
@@ -101,21 +102,21 @@ function save() {
   localStorage.setItem("album", JSON.stringify(images));
 }
 
-/* 画像追加（base64化） */
+/* 画像追加（複数対応・完全版） */
 file.addEventListener("change", (e) => {
-  const files = e.target.files;
+  const files = Array.from(e.target.files);
 
-  for (let f of files) {
+  files.forEach(f => {
     const reader = new FileReader();
 
-    reader.onload = function(event) {
+    reader.onload = (event) => {
       images.push(event.target.result);
       save();
       render();
     };
 
     reader.readAsDataURL(f);
-  }
+  });
 
   file.value = "";
 });
@@ -129,9 +130,10 @@ function render() {
     image.src = img;
     image.className = "thumb";
 
+    /* 拡大 */
     image.onclick = () => open(img);
 
-    /* 長押し削除（スマホ対応） */
+    /* 長押し削除（スマホ） */
     let timer;
 
     image.addEventListener("touchstart", () => {
@@ -142,6 +144,7 @@ function render() {
       clearTimeout(timer);
     });
 
+    /* PC右クリック削除 */
     image.addEventListener("contextmenu", (e) => {
       e.preventDefault();
       remove(i);
@@ -172,7 +175,7 @@ function remove(i) {
 
 /* 全削除 */
 function clearAll() {
-  if (confirm("全部削除しますか？")) {
+  if (confirm("すべて削除しますか？")) {
     images = [];
     save();
     render();
