@@ -1,0 +1,16 @@
+{
+  "name": "お気に入り画像ランチャー",
+  "short_name": "画像ランチャー",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='32' fill='%23111'/><rect x='40' y='48' width='112' height='80' rx='12' fill='%23fff'/><circle cx='74' cy='78' r='12' fill='%23111'/><path d='M48 118l26-24 20 18 14-12 36 30H48z' fill='%23222'/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
