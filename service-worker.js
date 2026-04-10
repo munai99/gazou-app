@@ -1,5 +1,5 @@
 const CACHE_NAME = 'fav-image-launcher-cache-v2';
-const ASSETS = ['./', './index.html', './manifest.json'];
+const ASSETS = ['./', './index.html', './manifest.json', './icon-512.png?v=2'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
