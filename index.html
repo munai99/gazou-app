@@ -106,7 +106,8 @@ async function addImage(file) {
     });
 
     req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
+    req.onerror = () => reject(req.error || new Error('IndexedDB add failed'));
+    tx.onerror = () => reject(tx.error || new Error('Transaction failed'));
   });
 }
 
