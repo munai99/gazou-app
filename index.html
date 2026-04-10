@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>お気に入り画像</title>
+<title>お気に入り画像ランチャー</title>
 
-<!-- ⭐ アイコン（同じフォルダに icon.png を置く） -->
+<!-- アイコン -->
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
 
@@ -21,7 +21,6 @@ header {
   padding: 12px;
   text-align: center;
   background: #222;
-  font-size: 16px;
 }
 
 #inputArea {
@@ -33,6 +32,7 @@ input {
   padding: 10px;
   background: #333;
   color: white;
+  border: none;
 }
 
 #grid {
@@ -56,8 +56,8 @@ input {
 
 .del {
   position: absolute;
-  top: 2px;
-  right: 2px;
+  top: 4px;
+  right: 4px;
   background: red;
   color: white;
   border: none;
@@ -86,7 +86,8 @@ input {
 <header>お気に入り画像ランチャー</header>
 
 <div id="inputArea">
-  <input type="file" id="file" accept="image/*">
+  <!-- ⭐ 複数選択OK -->
+  <input type="file" id="file" accept="image/*" multiple>
 </div>
 
 <div id="grid"></div>
@@ -100,20 +101,23 @@ let favs = JSON.parse(localStorage.getItem("favs") || "[]");
 
 render();
 
-// 画像追加
+// ⭐ 複数画像対応（ここが重要）
 document.getElementById("file").addEventListener("change", function(e) {
-  const file = e.target.files[0];
-  if (!file) return;
+  const files = Array.from(e.target.files);
 
-  const reader = new FileReader();
+  files.forEach(file => {
+    const reader = new FileReader();
 
-  reader.onload = function(ev) {
-    favs.push(ev.target.result);
-    save();
-    render();
-  };
+    reader.onload = function(ev) {
+      favs.push(ev.target.result);
+      save();
+      render();
+    };
 
-  reader.readAsDataURL(file);
+    reader.readAsDataURL(file);
+  });
+
+  // 同じ画像を再選択できるようにリセット
   e.target.value = "";
 });
 
@@ -133,11 +137,13 @@ function render() {
 
     const image = document.createElement("img");
     image.src = img;
+
     image.onclick = () => open(img);
 
     const del = document.createElement("button");
     del.className = "del";
     del.innerText = "×";
+
     del.onclick = (e) => {
       e.stopPropagation();
       favs.splice(index, 1);
